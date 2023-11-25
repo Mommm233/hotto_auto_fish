@@ -9,14 +9,14 @@
         "endurance_rect": [14, 10, 22, 73]
     },
     "paths": [
-        "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\placement.png",
-        "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bait.png",
-        "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bite.png"
+        ".\\img\\placement.png",
+        ".\\img\\bait.png",
+        ".\\img\\bite.png"
     ],
     "key_combinations": {
         "start": "ctrl+f",
         "stop": "ctrl+q",
-        "pause": "ctrl+s"
+        "restart": "ctrl+s"
     },
     "simulate_setting": {
         "mode": 1,
@@ -24,6 +24,6 @@
     },
     "limit_time": 60,
     "move_speed": 0.2,
-    "random_move_speed_ratio": 0.008,
+    "move_speed_ratio": 0.008,
     "threshold": 0.93
 }
