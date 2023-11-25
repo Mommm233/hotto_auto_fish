@@ -65,7 +65,7 @@ def move(yellow_left, yellow_right, white_left, white_right):
         key = 'a'
 
     pyautogui.keyDown(key)
-    time.sleep(random.uniform(0.1, 0.5) * move_speed + random_move_speed_ratio * abs(white_mid - yellow_mid))
+    time.sleep(random.uniform(0.1, 0.5) * move_speed + move_speed_ratio * abs(white_mid - yellow_mid))
     pyautogui.keyUp(key)
 
 def keyboard_press(key):
@@ -87,16 +87,15 @@ def wait_stop():
         return True
     return False
 
-def wait_pause():
-    if keyboard.is_pressed(pause_key_combination):
-        print("程序运行结束！")
+def wait_restart():
+    if keyboard.is_pressed(restart_key_combination):
         return True
     return False
 
 def check_placement_and_bait(window_object, placement_rect, bait_rect, placement_template, bait_template):
     left, top, width, height = window_object.left, window_object.top, window_object.width, window_object.height
     while not wait_stop():
-        if wait_pause():
+        if wait_restart():
             global restart
             restart = True
             return False
@@ -122,7 +121,7 @@ def check_placement_and_bait(window_object, placement_rect, bait_rect, placement
 def check_bite(window_object, bite_rect, bite_template):
     left, top, width, height = window_object.left, window_object.top, window_object.width, window_object.height
     while not wait_stop():
-        if wait_pause():
+        if wait_restart():
             global restart
             restart = True
             return False
@@ -141,7 +140,7 @@ def check_splider(window_object, menu_bar_rect, endurance_rect, process_bar_rect
 
     start_t = time.time()
     while not wait_stop():
-        if wait_pause():
+        if wait_restart():
             global restart
             restart = True
             return False
@@ -247,11 +246,11 @@ if __name__ == "__main__":
     paths = data['paths']
     key_combinations = data['key_combinations']
     stop_key_combination = key_combinations['stop']
-    pause_key_combination = key_combinations['pause']
+    restart_key_combination = key_combinations['restart']
     simulate_setting = data['simulate_setting']
     limit_time = data['limit_time']
     move_speed = data['move_speed']
-    random_move_speed_ratio =data['random_move_speed_ratio']
+    move_speed_ratio =data['move_speed_ratio']
     threshold = data['threshold']
 
     restart = False
