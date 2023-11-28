@@ -9,6 +9,7 @@ import sys
 import keyboard
 import json
 import threading
+import random
 
 class MoveDirection(threading.Thread):
     def __init__(self):
@@ -27,10 +28,11 @@ class MoveDirection(threading.Thread):
 
         self.white_mid = (white_left + white_right) // 2
         self.yellow_mid = (yellow_left + yellow_right) // 2
+        x = abs(self.yellow_mid - self.white_mid)
         if yellow_left < self.white_mid < yellow_right:
-            self.delay = 0.15
+            self.delay = 0.1 * x / 12
         else:
-            self.delay = 0.25
+            self.delay = 0.1 * x / 24
         
     def stop(self):
         self.yellow_mid = None
@@ -41,7 +43,7 @@ class MoveDirection(threading.Thread):
             if self.white_mid == None or self.yellow_mid == None:
                 time.sleep(0.5)
                 continue
-            elif self.yellow_mid == self.last_yellow_mid and self.white_mid == self.last_white_mid:
+            elif self.last_yellow_mid == self.yellow_mid and self.last_white_mid == self.white_mid:
                 continue
 
             if self.white_mid <= self.yellow_mid:
@@ -50,7 +52,7 @@ class MoveDirection(threading.Thread):
                 key = 'a'
 
             pyautogui.keyDown(key)
-            time.sleep(self.delay)
+            time.sleep(self.delay + random.uniform(0.05, 0.1))
             pyautogui.keyUp(key)
 
 
@@ -58,8 +60,8 @@ class MoveDirection(threading.Thread):
 # np.set_printoptions(threshold=np.inf)
 
 def get_img_gray(img_rect):
-    left = img_rect[0] + window_left
-    top = img_rect[1] + window_top
+    left = img_rect[0] + window_object.left
+    top = img_rect[1] + window_object.top
 
     img = pyautogui.screenshot(region=(left, top, img_rect[2], img_rect[3]))
     img = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2RGB)
@@ -98,9 +100,6 @@ def get_screenshot(left, top, width, height):
     screenshot_rgb = cv2.cvtColor(screenshot_np, cv2.COLOR_BGR2RGB)
     screenshot_gray = cv2.cvtColor(screenshot_rgb, cv2.COLOR_BGR2GRAY)
     return screenshot_gray
-
-
-
 
 def move(yellow_left, yellow_right, white_left, white_right):
     white_mid = (white_left + white_right) // 2
@@ -190,8 +189,8 @@ def check_splider():
         
         process_bar_gray = get_img_gray(process_bar_rect)
         process_bar_gray_np_1d = np.mean(np.array(process_bar_gray), axis=0).astype(np.uint8)
-        yellow_left, yellow_right= get_x_tuple(process_bar_gray_np_1d, 184, 190, 10)
-        white_left, white_right = get_x_tuple(process_bar_gray_np_1d, 252, 258, 1)
+        yellow_left, yellow_right= get_x_tuple(process_bar_gray_np_1d, yellow_vmin, yellow_vmax, 20)
+        white_left, white_right = get_x_tuple(process_bar_gray_np_1d, white_vmin, white_vmax, 1)
         if yellow_left == None or white_left == None:
             continue
         
@@ -215,7 +214,6 @@ def check_splider():
             print("超时")
             movedirection.stop()
             return True
-        time.sleep(0.1)
 
     return False
 
@@ -272,13 +270,16 @@ if __name__ == "__main__":
     restart = False
 
     window_object = gw.getWindowsWithTitle(data['window_title'])[0]
-    window_left, window_top, window_width, window_height = window_object.left, window_object.top, window_object.width, window_object.height
 
     placement_rect = rects['placement_rect']   # 鱼钩落点
     bait_rect = rects['bait_rect']    # 鱼饵
     bite_rect = rects['bite_rect']    # 鱼上钩
     process_bar_rect = rects['process_bar_rect']    # 进度条
     endurance_rect = rects['endurance_rect']   # 鱼耐力
+    yellow_vmin = data['yellow_vmin']
+    yellow_vmax = data['yellow_vmax']
+    white_vmin = data['white_vmin']
+    white_vmax = data['white_vmax']
 
     # 鱼钩模板
     placement_template = cv2.imread(paths[0], cv2.IMREAD_GRAYSCALE)
@@ -301,5 +302,6 @@ if __name__ == "__main__":
         movedirection.run_flag = False
         movedirection.join()
         print(str(e))
-        with open(r'AutoFinshing\error.log', 'w', encoding='utf-8') as f:
+        with open(r'C:\Users\wengym\Desktop\AutoFinshing\error.log', 'w', encoding='utf-8') as f:
             f.write(str(e) + '\n')
+
