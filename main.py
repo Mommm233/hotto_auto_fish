@@ -302,6 +302,6 @@ if __name__ == "__main__":
         movedirection.run_flag = False
         movedirection.join()
         print(str(e))
-        with open(r'C:\Users\wengym\Desktop\AutoFinshing\error.log', 'w', encoding='utf-8') as f:
+        with open(r'AutoFinshing\error.log', 'w', encoding='utf-8') as f:
             f.write(str(e) + '\n')
 
