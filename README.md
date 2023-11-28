@@ -1,7 +1,8 @@
 # hotto_auto_fish
 幻塔自动钓鱼
 ***
-实现: opencv + pyautogui
+实现: opencv + pyautogui  
+v2: 加入线程
 ***
 ```
 分辨率: 1920 * 1080
