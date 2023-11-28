@@ -4,22 +4,67 @@ import cv2
 import pyautogui
 import pygetwindow as gw
 import time
-import random
 import ctypes
 import sys
 import keyboard
 import json
+import threading
 
-np.set_printoptions(threshold=np.inf)
+class MoveDirection(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.run_flag = False
+        self.yellow_mid = None
+        self.white_mid = None
+        self.last_yellow_mid = None
+        self.last_white_mid = None
+        self.delay = 0
+    
+    def update(self, yellow_left, yellow_right, white_left, white_right):
+        if self.white_mid != None:
+            self.last_white_mid = self.white_mid
+            self.last_yellow_mid = self.yellow_mid
 
-def get_img_gray(img, img_rect):
-    top_left_x = img_rect[0]
-    top_left_y = img_rect[1]
-    bottom_right_x = top_left_x + img_rect[2]
-    bottom_right_y = top_left_y + img_rect[3]
-    img_gray = img[
-        top_left_y:bottom_right_y, top_left_x:bottom_right_x
-    ].copy()
+        self.white_mid = (white_left + white_right) // 2
+        self.yellow_mid = (yellow_left + yellow_right) // 2
+        if yellow_left < self.white_mid < yellow_right:
+            self.delay = 0.15
+        else:
+            self.delay = 0.25
+        
+    def stop(self):
+        self.yellow_mid = None
+        self.white_mid = None
+
+    def run(self):
+        while self.run_flag:
+            if self.white_mid == None or self.yellow_mid == None:
+                time.sleep(0.5)
+                continue
+            elif self.yellow_mid == self.last_yellow_mid and self.white_mid == self.last_white_mid:
+                continue
+
+            if self.white_mid <= self.yellow_mid:
+                key = 'd'
+            elif self.white_mid > self.yellow_mid:
+                key = 'a'
+
+            pyautogui.keyDown(key)
+            time.sleep(self.delay)
+            pyautogui.keyUp(key)
+
+
+
+# np.set_printoptions(threshold=np.inf)
+
+def get_img_gray(img_rect):
+    left = img_rect[0] + window_left
+    top = img_rect[1] + window_top
+
+    img = pyautogui.screenshot(region=(left, top, img_rect[2], img_rect[3]))
+    img = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2RGB)
+    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
     return img_gray
 
 def get_x_tuple(gray_np_1d, vmin, vmax, len):
@@ -54,10 +99,11 @@ def get_screenshot(left, top, width, height):
     screenshot_gray = cv2.cvtColor(screenshot_rgb, cv2.COLOR_BGR2GRAY)
     return screenshot_gray
 
+
+
+
 def move(yellow_left, yellow_right, white_left, white_right):
     white_mid = (white_left + white_right) // 2
-    if yellow_left + 10 < white_mid < yellow_right - 10:
-        return
     yellow_mid = (yellow_left + yellow_right) // 2
     if white_mid <= yellow_mid:
         key = 'd'
@@ -65,7 +111,7 @@ def move(yellow_left, yellow_right, white_left, white_right):
         key = 'a'
 
     pyautogui.keyDown(key)
-    time.sleep(random.uniform(0.1, 0.5) * move_speed + move_speed_ratio * abs(white_mid - yellow_mid))
+    time.sleep(0.2)
     pyautogui.keyUp(key)
 
 def keyboard_press(key):
@@ -73,7 +119,7 @@ def keyboard_press(key):
     pyautogui.keyUp(key)
 
 def mouse_click():
-    x, y = pyautogui.position()
+    [x, y] = pyautogui.position()
     pyautogui.click(x, y, button='left')
 
 def img_match(original, template):
@@ -82,34 +128,35 @@ def img_match(original, template):
     return max_val > threshold
 
 def wait_stop():
-    if keyboard.is_pressed(stop_key_combination):
+    if keyboard.is_pressed(key_combinations['stop']):
         print("程序运行结束！")
         return True
     return False
 
 def wait_restart():
-    if keyboard.is_pressed(restart_key_combination):
+    if keyboard.is_pressed(key_combinations['restart']):
         return True
     return False
 
-def check_placement_and_bait(window_object, placement_rect, bait_rect, placement_template, bait_template):
-    left, top, width, height = window_object.left, window_object.top, window_object.width, window_object.height
+def check_placement_and_bait():
     while not wait_stop():
         if wait_restart():
             global restart
             restart = True
             return False
-        window_screenshot_gary = get_screenshot(left, top, width, height)
-        placement_original = get_img_gray(window_screenshot_gary, placement_rect)
 
+        placement_original = get_img_gray(placement_rect)
         if img_match(placement_original, placement_template):
             print('检测到鱼钩落点！')
-            bait_original = get_img_gray(window_screenshot_gary, bait_rect)
-            if not img_match(bait_original, bait_template):
+            bait_original = get_img_gray(bait_rect)
+            have_bait = False
+            for bait_template in bait_templates:
+                if img_match(bait_original, bait_template):
+                    have_bait = True
+                    break
+            if not have_bait:
                 print('没有鱼饵！')
-                print('程序即将退出...')
-                time.sleep(3)
-                sys.exit(0)
+                return False
             else:
                 print('已装备鱼饵！')
             keyboard_press('1')
@@ -118,24 +165,20 @@ def check_placement_and_bait(window_object, placement_rect, bait_rect, placement
         time.sleep(0.5)
     return False
 
-def check_bite(window_object, bite_rect, bite_template):
-    left, top, width, height = window_object.left, window_object.top, window_object.width, window_object.height
+def check_bite():
     while not wait_stop():
         if wait_restart():
             global restart
             restart = True
             return False
-        window_screenshot_gary = get_screenshot(left, top, width, height)
-        bite_original = get_img_gray(window_screenshot_gary, bite_rect)
-
+        
+        bite_original = get_img_gray(bite_rect)
         if img_match(bite_original, bite_template):
             print('鱼上钩！')
             return True
-        # time.sleep(0.1)
     return False
 
-def check_splider(window_object, menu_bar_rect, endurance_rect, process_bar_rect):
-    left, top, width, height = window_object.left, window_object.top, window_object.width, window_object.height
+def check_splider():
     print('抓捕中...')
 
     start_t = time.time()
@@ -144,34 +187,36 @@ def check_splider(window_object, menu_bar_rect, endurance_rect, process_bar_rect
             global restart
             restart = True
             return False
-        window_screenshot_gary = get_screenshot(left, top, width, height)
-        menu_bar_gray = get_img_gray(window_screenshot_gary, menu_bar_rect)
-        endurance_gray = get_img_gray(menu_bar_gray, endurance_rect)
-        endurance_binary = endurance_gray // 218
-
-        if np.sum(endurance_binary) == 0:
-            print('抓到了！')
-            keyboard_press('1')
-            time.sleep(2)
-            mouse_click()
-            return True
         
-        process_bar_gray = get_img_gray(menu_bar_gray, process_bar_rect)
+        process_bar_gray = get_img_gray(process_bar_rect)
         process_bar_gray_np_1d = np.mean(np.array(process_bar_gray), axis=0).astype(np.uint8)
-
         yellow_left, yellow_right= get_x_tuple(process_bar_gray_np_1d, 184, 190, 10)
         white_left, white_right = get_x_tuple(process_bar_gray_np_1d, 252, 258, 1)
         if yellow_left == None or white_left == None:
             continue
+        
         if simulate_setting['mode'] == 1:
             simulate_process_bar(process_bar_gray_np_1d.shape[0], yellow_left, yellow_right, white_left, white_right)
-        move(yellow_left, yellow_right, white_left, white_right)
-        time.sleep(0.1)
 
+        movedirection.update(yellow_left, yellow_right, white_left, white_right)
+        
+        endurance_gray = get_img_gray(endurance_rect)
+        endurance_binary = endurance_gray // 218
+        if np.sum(endurance_binary) == 0:
+            print('抓到了！')
+            movedirection.stop()
+            time.sleep(0.5)
+            keyboard_press('1')
+            time.sleep(2)
+            mouse_click()
+            return True
         end_t = time.time()
         if end_t - start_t > limit_time:
             print("超时")
+            movedirection.stop()
             return True
+        time.sleep(0.1)
+
     return False
 
 def running():
@@ -180,51 +225,25 @@ def running():
     print('自动钓鱼\n' + '    开始钓鱼: Ctrl + F\n' + '    结束钓鱼: Ctrl + Q\n' + '    重新开始: Ctrl + S\n')
     keyboard.wait(key_combinations['start'])
 
-    window_object = gw.getWindowsWithTitle(window_title)[0]
-
-    menu_bar_rect = rects['menu_bar_rect']
-    placement_rect = rects['placement_rect']   # 鱼钩落点
-    bait_rect = rects['bait_rect']    # 鱼饵
-    bite_rect = rects['bite_rect']    # 鱼上钩
-    process_bar_rect = rects['process_bar_rect']
-    endurance_rect = rects['endurance_rect']   # 鱼耐力
-
-    placement_template = cv2.imread(paths[0], cv2.IMREAD_GRAYSCALE)
-    bait_template = cv2.imread(paths[1], cv2.IMREAD_GRAYSCALE)
-    bite_template = cv2.imread(paths[2], cv2.IMREAD_GRAYSCALE)
-
-    window_object.activate()
+    #window_object.activate()
     while not wait_stop():
         print('\033c', end='')
         print('自动钓鱼\n' + '    开始钓鱼: Ctrl + F\n' + '    结束钓鱼: Ctrl + Q\n' + '    重新开始: Ctrl + S\n')
         print('程序开始运行!')
 
-        if not check_placement_and_bait(
-                window_object, 
-                placement_rect, 
-                bait_rect,
-                placement_template, 
-                bait_template
-        ):
+        if not check_placement_and_bait():
             break
-        if not check_bite(
-                window_object, 
-                bite_rect, 
-                bite_template
-        ):
+        if not check_bite():
             break
         time.sleep(1)
-        if not check_splider(
-            window_object,
-            menu_bar_rect, 
-            endurance_rect, 
-            process_bar_rect,
-        ):
+        if not check_splider():
             break
-        time.sleep(2)
+
+    movedirection.stop()
 
     if restart:
         print('正在重新开始...')
+        time.sleep(1)
         running()
     print('程序即将退出...')
     time.sleep(3)
@@ -241,24 +260,46 @@ if __name__ == "__main__":
 
     with open(r'C:\Users\wengym\Desktop\AutoFinshing\config.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
-    window_title = data['window_title']
+
     rects = data['rects']
     paths = data['paths']
     key_combinations = data['key_combinations']
-    stop_key_combination = key_combinations['stop']
-    restart_key_combination = key_combinations['restart']
+
     simulate_setting = data['simulate_setting']
     limit_time = data['limit_time']
-    move_speed = data['move_speed']
-    move_speed_ratio =data['move_speed_ratio']
     threshold = data['threshold']
 
     restart = False
-    
+
+    window_object = gw.getWindowsWithTitle(data['window_title'])[0]
+    window_left, window_top, window_width, window_height = window_object.left, window_object.top, window_object.width, window_object.height
+
+    placement_rect = rects['placement_rect']   # 鱼钩落点
+    bait_rect = rects['bait_rect']    # 鱼饵
+    bite_rect = rects['bite_rect']    # 鱼上钩
+    process_bar_rect = rects['process_bar_rect']    # 进度条
+    endurance_rect = rects['endurance_rect']   # 鱼耐力
+
+    # 鱼钩模板
+    placement_template = cv2.imread(paths[0], cv2.IMREAD_GRAYSCALE)
+    # 鱼饵模板
+    bait_templates = []
+    for x in paths[1]:
+        bait_templates.append(cv2.imread(x, cv2.IMREAD_GRAYSCALE))
+    # 鱼上钩模板
+    bite_template = cv2.imread(paths[2], cv2.IMREAD_GRAYSCALE)
+
+    movedirection = MoveDirection()
+    movedirection.run_flag = True
+    movedirection.start()
     try:
         running()
+        movedirection.run_flag = False
+        movedirection.join()
+
     except Exception as e:
-        with open(r'C:\Users\wengym\Desktop\AutoFinshing\error.log', 'w', encoding='utf-8') as f:
+        movedirection.run_flag = False
+        movedirection.join()
+        print(str(e))
+        with open(r'AutoFinshing\error.log', 'w', encoding='utf-8') as f:
             f.write(str(e) + '\n')
-
-
