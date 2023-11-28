@@ -27,4 +27,8 @@
     },
     "limit_time": 60,
     "threshold": 0.93
+    "yellow_vmin": 186,
+    "yellow_vmax": 188,
+    "white_vmin": 252,
+    "white_vmax": 255
 }
