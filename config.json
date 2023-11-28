@@ -1,17 +1,20 @@
 {
     "window_title": "幻塔",
     "rects": {
-        "menu_bar_rect": [613, 83, 707, 99],
         "placement_rect": [921, 572, 99, 99],
         "bait_rect": [1786, 360, 152, 131],
         "bite_rect": [673, 270, 583, 69],
-        "process_bar_rect": [60, 43, 600, 5],
-        "endurance_rect": [14, 10, 22, 73]
+        "process_bar_rect": [673, 126, 600, 5],
+        "endurance_rect": [627, 93, 22, 73]
     },
     "paths": [
-        ".\\img\\placement.png",
-        ".\\img\\bait.png",
-        ".\\img\\bite.png"
+        "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\placement.png",
+        [
+            "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bait.png", 
+            "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bait1.png",
+            "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bait2.png"
+        ],
+        "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bite.png"
     ],
     "key_combinations": {
         "start": "ctrl+f",
@@ -23,7 +26,5 @@
         "len": 60
     },
     "limit_time": 60,
-    "move_speed": 0.2,
-    "move_speed_ratio": 0.008,
     "threshold": 0.93
 }
