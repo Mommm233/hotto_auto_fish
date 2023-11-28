@@ -8,13 +8,13 @@
         "endurance_rect": [627, 93, 22, 73]
     },
     "paths": [
-        "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\placement.png",
+        "img\\placement.png",
         [
-            "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bait.png", 
-            "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bait1.png",
-            "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bait2.png"
+            "img\\bait.png", 
+            "img\\bait1.png",
+            "img\\bait2.png"
         ],
-        "C:\\Users\\wengym\\Desktop\\AutoFinshing\\img\\bite.png"
+        "img\\bite.png"
     ],
     "key_combinations": {
         "start": "ctrl+f",
